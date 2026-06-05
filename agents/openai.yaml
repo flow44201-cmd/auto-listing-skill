@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ozon自动上架"
+  short_description: "按总规则、类目注意点和验收清单处理Ozon价格表、上架表、图片zip和自动上架工具回填。"
+  default_prompt: "执行自动上架skill，读取本机总规则和类目注意点，按检查清单完成Ozon上架处理。"
