@@ -11,6 +11,8 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 
 如果任何规则不确定，先从本机文件、旧数据、类目注意点、产品信息和表头上下文中查证。只有无法查证且继续执行会造成覆盖、错填、错价、错类目、错图片或错路径时，才问用户。
 
+完成定义：只有当 `references/original-requirements-coverage.md` 和 `references/final-audit-checklist.md` 中所有适用项目都完成并通过核对，才能说任务完成。任何一项无法完成、无法确认或存在冲突未解决时，必须明确标为未完成/阻塞，说明原因和需要用户补充的内容，不能跳过、不能模糊带过、不能假装完成。
+
 ## 动态定位店铺根目录
 
 不要把任何绝对路径写死。`D:\全自动流程终极版\ozon上架` 只能当作原作者本机示例，不能当作别人电脑上的固定路径。
@@ -160,7 +162,7 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 
 ### 9. 最终验收
 
-交付前必须逐项执行 `references/final-audit-checklist.md`。
+交付前必须逐项执行 `references/original-requirements-coverage.md` 和 `references/final-audit-checklist.md`。
 
 最终回复用户时必须说明：
 
@@ -178,7 +180,7 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 
 1. 用户本次消息中的明确要求。
 2. `系统文件(勿碰)\要注意的点` 中对应类目的注意点。
-3. 系统根目录中的总规则 txt。
+3. 当前店铺根目录中的总规则 txt。
 4. 本 skill 的参考规则。
 5. 旧表中已有数据模式。
 
@@ -200,3 +202,4 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 - 禁止新填行标黄。
 - 禁止跳过上架任务总表。
 - 禁止跳过自动上架工具回填。
+- 禁止在任何原始要求未核对通过时声称任务完成。
