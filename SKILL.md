@@ -69,6 +69,7 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 
 执行实际上架处理前，必须读取：
 
+- `references/full-original-instructions.md`
 - `references/ozon-listing-rules.md`
 - `references/final-audit-checklist.md`
 - `references/original-requirements-coverage.md`
