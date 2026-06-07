@@ -69,12 +69,13 @@ description: 当用户说“执行自动上架skill”、“自动上架skill”
 
 执行实际上架处理前，必须读取：
 
+- `references/verbatim-user-requirements.md`
 - `references/full-original-instructions.md`
 - `references/ozon-listing-rules.md`
 - `references/final-audit-checklist.md`
 - `references/original-requirements-coverage.md`
 
-不要只读本文件就开始填表。
+不要只读本文件就开始填表。`references/verbatim-user-requirements.md` 是用户原始要求的逐字版本，必须作为完整性核对来源；如果其他参考文件和逐字原文存在遗漏或表达差异，以用户本次消息和逐字原文为准。
 
 ## 执行流程
 

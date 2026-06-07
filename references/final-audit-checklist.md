@@ -2,6 +2,8 @@
 
 交付前必须逐项核对。任何一项不通过，不得声称任务完成。
 
+必须逐句核对 `references/verbatim-user-requirements.md`。该文件是用户原话逐字版本；任何一句适用要求没有落实，都不得声称任务完成。
+
 同时必须逐项核对 `references/original-requirements-coverage.md`。该文件是用户原始要求的覆盖表，任何适用项目没有完成，都不得声称任务完成。
 
 同时必须逐句核对 `references/full-original-instructions.md`。该文件不是概要，而是逐句完整要求；任何一句适用要求没有落实，都不得声称任务完成。
@@ -174,5 +176,6 @@
 - 自动上架工具是否已回填。
 - `original-requirements-coverage.md` 和 `final-audit-checklist.md` 是否已逐项核对。
 - `full-original-instructions.md` 是否已逐句核对。
+- `verbatim-user-requirements.md` 是否已逐句核对。
 - 是否有未完成项。
 - 若有未完成项，说明原因和需要用户补充的内容。

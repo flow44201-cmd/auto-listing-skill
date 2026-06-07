@@ -6,6 +6,8 @@
 
 还必须逐句核对 `references/full-original-instructions.md`。如果本覆盖表和逐句要求文件存在表达差异，以逐句要求文件和用户本次消息为准。
 
+还必须逐句核对 `references/verbatim-user-requirements.md`。该文件保留用户原话，不是改写版；如果任何改写文件和原话存在差异，以用户本次消息和逐字原话为准。
+
 ## 定位和范围
 
 - 必须找到当前整个上架系统/店铺根目录，不能写死示例绝对路径。
