@@ -1,238 +1,103 @@
 ---
 name: auto-listing-skill
-description: 当用户说“执行自动上架skill”、“自动上架skill”、“按我的上架规则处理”、“按总规则开始上架”、“处理Ozon上架表”、“处理Ozon自动上架”、“帮我上架Ozon产品”时使用。核心任务是动态定位当前店铺/上架系统根目录，按用户的总规则、类目注意点、产品信息、成品图和现有Excel模板，完成价格表、对应类目上架表、图片zip、上架任务总表、自动上架工具路径与行数回填，并在交付前逐项核对不遗漏。
+description: Use when the user explicitly invokes auto-listing-skill or asks to process Ozon automatic listing work: locate the current shop root dynamically, read the shop rules and category notes, process product info and finished images, fill the price workbook and category listing workbook, build the image zip, fill the task summary workbook, and backfill the auto-listing tool paths, row ranges, and Ozon task_id without missing details.
 ---
 
-ENCODING NOTICE: This file and every file under `references/` are UTF-8. On Windows PowerShell, read with `Get-Content -Encoding UTF8`. If Chinese text appears as mojibake such as `褰撶敤鎴`, `涓`, `鈥`, or replacement characters, stop immediately and reread with UTF-8. Do not execute from garbled text.
+# Auto Listing Skill
 
-# 自动上架skill
+## Encoding-safe entry
 
-## 最高原则
+This `SKILL.md` is intentionally ASCII-only so it remains readable on Windows computers where PowerShell defaults to a legacy code page.
 
-必须把这项工作当成“生产系统数据处理”，不是普通文案生成。执行时必须先读规则、再做清单、再处理文件、最后逐项验收。
+Do not read Chinese rule files with default PowerShell `Get-Content`.
 
-所有 skill 文件和 `references` 文件都是 UTF-8。读取本 skill 或 references 时必须使用 UTF-8；在 Windows PowerShell 中必须用 `Get-Content -Encoding UTF8` 或等价方式。若看到 `褰撶敤鎴`、`涓`、`鈥`、`U+FFFD replacement character` 等乱码，说明读取方式错误，必须立刻用 UTF-8 重新读取，不能基于乱码内容继续执行。
+Required rule:
 
-读取 `references/verbatim-user-requirements.md`、`references/full-original-instructions.md`、`references/ozon-listing-rules.md` 和 `references/final-audit-checklist.md` 时必须完整读取全文，不能只读开头、不能使用 `-TotalCount`/head/preview 代替全文读取。执行前必须确认中文能完整显示，且没有乱码。
+```powershell
+python .\scripts\read_utf8_references.py --all
+```
 
-如果任何规则不确定，先从本机文件、旧数据、类目注意点、产品信息和表头上下文中查证。只有无法查证且继续执行会造成覆盖、错填、错价、错类目、错图片或错路径时，才问用户。
+If running from another directory, use the absolute path to this skill folder:
 
-完成定义：只有当 `references/original-requirements-coverage.md` 和 `references/final-audit-checklist.md` 中所有适用项目都完成并通过核对，才能说任务完成。任何一项无法完成、无法确认或存在冲突未解决时，必须明确标为未完成/阻塞，说明原因和需要用户补充的内容，不能跳过、不能模糊带过、不能假装完成。
+```powershell
+python "PATH_TO_SKILL\scripts\read_utf8_references.py" --all
+```
 
-## 动态定位店铺根目录
+This script reads every required reference file with UTF-8, validates that no mojibake was produced, and prints the complete rule text. It avoids the common Windows problem where PowerShell default decoding turns Chinese into unreadable text.
 
-不要把任何绝对路径写死。`D:\全自动流程终极版\ozon上架` 只能当作原作者本机示例，不能当作别人电脑上的固定路径。
+Forbidden for Chinese rule files:
 
-文件的路径在用户后面提到的路径里；如果用户下方注意点、后续说明或本次消息后半部分提到路径，必须优先读取并使用那些路径。
+```powershell
+Get-Content .\references\*.md
+Get-Content .\SKILL.md
+type .\references\*.md
+```
 
-解析用户给出的中文路径时，句尾位置词不是路径本身。比如用户说 `文件在D:\全自动流程终极版\鱼钩店里`，实际路径应解析为 `D:\全自动流程终极版\鱼钩店`，不要把最后的 `里` 当作文件夹名。类似的 `中`、`下面`、`目录里`、`文件夹里`、`路径里` 也要从路径末尾剥离。先按剥离后路径验证；只有剥离后不存在且原始路径存在时，才使用原始路径。
+Allowed only when explicit UTF-8 is used:
 
-执行前必须先确定“当前店铺根目录”。店铺根目录是同时包含以下典型项目的文件夹：
+```powershell
+Get-Content -Encoding UTF8 .\references\verbatim-user-requirements.md
+```
 
-- `产品信息` 或 `产品信息文件夹`
-- `系统文件(勿碰)`
-- `主图和视频`
-- `初始化店铺.bat`
-- `开始.bat`
-- `价格表.xlsx`
-- `上架任务总表.xlsx`
+If any output contains mojibake, replacement characters, question-mark Chinese, or unreadable Chinese, stop immediately and rerun `scripts/read_utf8_references.py`. Do not execute from garbled rules.
 
-根目录定位顺序：
+## Mandatory references
 
-1. 如果用户本次消息、用户下方注意点或 `系统文件(勿碰)\要注意的点` 明确给了完整店铺目录位置/上架系统目录位置，优先使用这个目录。
-2. 如果用户本次消息明确给了店铺目录，使用用户给的目录。
-3. 如果用户本次消息、用户下方注意点或 `系统文件(勿碰)\要注意的点` 明确给了“店铺文件夹名称/目标文件夹名称/图片上一级目录名称”，先记录这个目标名称。
-4. 扫描当前工作目录、父目录、同级目录和用户给定搜索范围下所有符合店铺根目录结构的候选目录。
-5. 如果存在目标名称，只能选择文件夹名与目标名称一致的候选目录；目标名称通常是图片目录上一级目录或当前店铺根目录的文件夹名。
-6. 如果没有目标名称，但当前工作目录或其父目录符合店铺根目录结构，使用该目录。
-7. 如果发现多个候选目录，优先选择 `系统文件(勿碰)\成品图` 中有本次待上架图片/文件夹的目录。
-8. 如果仍有多个候选目录，用候选目录名称让用户选择，不要猜。
-9. 如果找不到候选目录，询问用户提供店铺根目录。
-
-别人有多个店铺/多个系统文件夹时，使用“图片目录的上一级店铺目录名称”、注意点里给出的目标文件夹名称和上述标志文件共同区分。只处理名称匹配的那个店铺文件夹。不要跨店铺混用价格表、上架表、成品图、任务总表或临时文件。
-
-如果注意点指定了目标文件夹名称，但没有找到匹配目录，或找到多个同名/疑似匹配目录，必须停止并向用户确认，不能处理其他店铺文件夹。
-
-## 动态确定产品编号开头
-
-不要把产品编号开头数字写死。原作者本机示例是 `1`，但别人使用时必须动态确定。
-
-产品编号开头确定顺序：
-
-1. 如果用户本次消息明确说“产品编号开头数字是 X”，使用 X。
-2. 如果店铺配置文件或 `初始化店铺.bat` 明确写了产品编号开头，使用配置值。
-3. 如果价格表 D 列已有旧产品编号，从旧数据中推断当前店铺的编号开头。
-4. 如果上架表 A 列已有旧产品编号，和价格表推断结果交叉验证。
-5. 如果没有旧数据且没有配置，询问用户，不要默认填 `1`。
-
-禁止擅自把产品编号开头固定成某个数字或前缀，例如 `1`、`21` 等。只有用户本次要求、下方注意点、初始化脚本、店铺配置、价格表旧数据或上架表旧数据明确支持时，才能使用对应前缀。
-
-如果用户本次消息明确写了 `产品编号开头：21`、`产品编号开头是 21`、`产品编号开头的数字是 21` 等表达，则必须按用户本次明确要求使用 `21`，并在任务清单中记录来源为“用户本次消息”。
-
-必须优先读取以下本机资料：
-
-1. 当前店铺根目录中的总规则 txt。若有多个疑似总规则文件，选择与“给Codex提示词”“总规则”“上架规则”最相关的文件。
-2. `系统文件(勿碰)\要注意的点` 中与本次产品类目一一对应的注意点。
-3. `产品信息` 或 `产品信息文件夹` 中每个产品对应文件夹内的 txt 和卖点图。
-4. `系统文件(勿碰)\上架表文件` 或 `系统文件(勿碰)\上架表` 中对应类目的上架表。
-5. 价格表、`系统文件(勿碰)\上架任务总表.xlsx`、自动上架工具相关文件。
-
-若 UTF-8 读取中文规则出现乱码，改用 GBK/936 读取。
-
-## 必须加载的参考文件
-
-执行实际上架处理前，必须读取：
+Before doing any Ozon listing work, load the following files completely through `scripts/read_utf8_references.py --all`:
 
 - `references/verbatim-user-requirements.md`
 - `references/full-original-instructions.md`
 - `references/ozon-listing-rules.md`
-- `references/final-audit-checklist.md`
 - `references/original-requirements-coverage.md`
+- `references/final-audit-checklist.md`
 
-不要只读本文件就开始填表。`references/verbatim-user-requirements.md` 是用户原始要求的逐字版本，必须作为完整性核对来源；如果其他参考文件和逐字原文存在遗漏或表达差异，以用户本次消息和逐字原文为准。
+Do not use `-TotalCount`, `head`, preview, or partial reads instead of full reads.
 
-## 执行流程
+## Execution contract
 
-### 1. 建立本次任务清单
+Treat this as production data processing, not ordinary copywriting.
 
-先识别本次要处理的产品，以 `系统文件(勿碰)\成品图` 中的图片/文件夹为准，结合 `产品信息` 或 `产品信息文件夹` 中一一对应的产品资料确认。
+The task is complete only when all applicable items in `references/original-requirements-coverage.md` and `references/final-audit-checklist.md` are checked and satisfied. If any item cannot be completed or verified, report it as unfinished or blocked with the reason.
 
-必须记录：
+Important constraints that must never be skipped:
 
-- 产品数量。
-- 每个产品的产品信息来源文件夹；兼容 `产品信息` 和 `产品信息文件夹` 两种目录名。
-- 每个产品对应的成品图。
-- 每个产品对应类目。
-- 每个产品应填写的类目上架表。
-- 是否超过 100 个产品；超过 100 个必须分批，不能一次全塞进同一批任务。
+- Dynamically locate the current shop root. Do not hardcode a path.
+- Prefer paths mentioned later in the user prompt or in lower notes.
+- Strip Chinese locative suffixes such as trailing `li` meaning "in/inside" from user-provided paths when appropriate; for example, `...\shop li` in Chinese text may mean the path is `...\shop`.
+- Determine the product-number prefix dynamically from the user message, shop config, init script, or old workbooks. Do not hardcode `1`, `21`, or any other prefix without a source.
+- `Finished images` / `system finished images` determine what products must be listed.
+- Product selling points and parameters come from corresponding product info folders, txt files, and selling-point images.
+- Fill the price workbook without overwriting old data or formulas.
+- Preserve formulas and formatting; do not hide or overwrite formulas.
+- Fill numeric values as numbers where required; keep long IDs as direct text, never scientific notation.
+- Prices and relevant amounts are RMB when the user says so; do not calculate from rubles.
+- Respect all unit conversions.
+- Choose the category workbook from the category line in the product txt file.
+- Listing titles, descriptions, and tags must be Russian and suitable for direct Ozon upload.
+- Titles, descriptions, intros, and tags must not contain brand information unless allowed, forbidden words, color terms where prohibited, or manufacturer/factory/wholesale/supplier wording.
+- Tags must be based on product data and Ozon/search analysis.
+- Category attributes must follow "fill everything that can reasonably be filled".
+- Fields with dictionary/dropdown/enum values must use valid dictionary values or old-table dictionary patterns. Do not invent dictionary values and do not replace dictionary values with free text.
+- Brand is the special exception: fill a brand only when the user explicitly provides `brand: XXX` or the Chinese equivalent. Otherwise use the Russian no-brand dictionary value specified in the UTF-8 references.
+- `main images and video` is one folder name. Do not create separate `main images` and `video` folders. Inside it, create only product-number folders, and put the corresponding images inside those folders.
+- Put image zip files in the required image-zip folder.
+- Fill `task summary workbook` every time. New rows must not be yellow. If copying row formatting, clear any yellow fill from newly added rows.
+- Do not process more than 100 products in one batch; split batches when needed.
+- Put all intermediate files only in the required temporary folder.
+- Backfill the auto-listing tool paths, row ranges, zip path, workbook paths, and Ozon task_id from the latest task-summary row. Do not leave this for the user.
+- If lower notes conflict with upper rules, lower notes win.
 
-`系统文件(勿碰)\成品图` 是本次“要上哪些产品”的判定入口。不要仅凭产品信息文件夹中存在资料就上架，也不要遗漏成品图中存在的产品。
+## Recommended workflow
 
-### 2. 读取旧表结构
-
-处理任何 Excel 前，先读取旧数据和表结构：
-
-- 找到最后一个已有数据行。
-- 识别公式列，禁止覆盖或清空公式。
-- 识别旧数据中固定沿用的列值。
-- 识别列格式、文本格式、数字格式和日期/货币显示方式。
-- 新增数据必须接在旧数据后面的空白行，不能覆盖旧数据。
-
-### 3. 生成文案前先做 Ozon 分析
-
-标题、简介、描述、标签不能直接凭空写。必须结合：
-
-- 产品信息 txt。
-- 产品卖点图；如果卖点图、参数图或详情图是图片，必须读取图片内容，必要时用视觉识别/OCR提取卖点和参数。
-- 产品图片。
-- Ozon 或相关电商搜索数据/竞品表达。
-- 类目注意点。
-
-如果需要最新 Ozon 搜索、关键词、竞品标题或热词，必须联网搜索或打开相关网页核实。生成内容要适合直接放到 Ozon，不要出现分析过程口吻。
-
-### 4. 填价格表
-
-严格按 `references/ozon-listing-rules.md` 的价格表规则执行。
-
-### 5. 填对应类目上架表
-
-根据产品信息 txt 中“类目”行选择对应类目表，例如 txt 写“假饵”，就填 `假饵.xlsx`。
-
-严格按 `references/ozon-listing-rules.md` 的上架表规则执行。
-
-上架表属性必须坚持“能多填就多填”：用户没有逐项告诉的属性，只要能通过产品图片、卖点图、txt、旧表同类数据、类目属性含义、Ozon 数据或注意点合理判断，就要尽量填上，不能因为用户没逐字提供就留空。
-
-凡是类目表中存在字典值/下拉值/已有旧值模式的字段，必须按表内字典值或旧表已有字典值填写，不能自己捏造新值、不能随意翻译成非字典值、不能用自由文本替代字典值。品牌字段是唯一特殊例外：只有用户按“品牌：XXX”明确提供时才填品牌，否则填 `Нет бренда`。
-
-### 6. 整理图片、主图、视频和 zip
-
-同一产品不同规格可以共用一套颜色图。不要为了不同 SKU 大量复制相同图片；只要映射正确即可。
-
-颜色图顺序必须保持用户原来的顺序，不得重排。
-
-`主图和视频` 是一个文件夹名称，不是分别创建 `主图` 和 `视频` 两个文件夹。不要把图片目录拆成主图目录和视频目录。
-
-必须在当前店铺根目录的 `主图和视频` 文件夹里，直接形成多个以产品编号命名的子文件夹。每个产品编号子文件夹里放该产品编号对应的图片。
-
-`主图和视频` 文件夹里只放产品编号命名的文件夹；产品编号文件夹里放图片。不要额外创建 `主图`、`视频`、`main`、`video` 等分层。
-
-如果 `主图和视频` 目标文件夹不存在，必须在当前店铺根目录下按旧流程/旧路径创建，不要建到其他店铺或其他临时位置。
-
-图片 zip 必须放在：
-
-`系统文件(勿碰)\图片zip文件`
-
-### 7. 填上架任务总表
-
-每次处理完必须填写：
-
-`系统文件(勿碰)\上架任务总表.xlsx`
-
-要求：
-
-- 按原示例格式填。
-- 新填内容不要标黄。
-- 如果通过复制旧行/示例行来保留格式，必须检查并清除新增行的黄色填充；新增行可以继承边框、字体、数字格式和列宽，但不能继承黄色底色。
-- 不超过 100 个产品；超过 100 个分批。
-- 记录本次对应价格表、上架表、zip、产品编号范围、行数范围、任务顺序等必要信息。
-
-### 8. 回填自动上架工具
-
-全部文件完成后，必须根据 `系统文件(勿碰)\上架任务总表.xlsx` 最新一行，自动填写自动上架工具中的店铺上架路径和行数栏。
-
-必须回填：
-
-- 价格表路径。
-- 对应类目上架表路径。
-- 图片 zip 路径。
-- `主图和视频` 文件夹路径或工具要求的对应图片路径。
-- 开始行、结束行或工具要求的行数栏。
-- Ozon task_id，按上方顺序填写。
-
-不要让用户手动填写这些路径和行数。
-
-### 9. 最终验收
-
-交付前必须逐项执行 `references/original-requirements-coverage.md` 和 `references/final-audit-checklist.md`。
-
-最终回复用户时必须说明：
-
-- 处理了多少个产品。
-- 填了哪些价格表/上架表。
-- 图片 zip 放在哪里。
-- 上架任务总表新增了哪一行或哪几行。
-- 自动上架工具是否已回填。
-- 哪些检查已通过。
-- 如果有未完成项，明确说明原因和需要用户补充什么。
-
-## 冲突优先级
-
-规则冲突时按以下顺序：
-
-1. 用户本次消息中的明确要求。
-2. `系统文件(勿碰)\要注意的点` 中对应类目的注意点。
-3. 当前店铺根目录中的总规则 txt。
-4. 本 skill 的参考规则。
-5. 旧表中已有数据模式。
-
-下方/后续注意点与上方规则冲突时，以下方/后续注意点为准。
-
-## 绝对禁止
-
-- 禁止覆盖旧数据。
-- 禁止改动无关文件。
-- 禁止改变任何 Excel 原格式。
-- 禁止覆盖、删除、隐藏或破坏公式。
-- 禁止把人民币当卢布计算。
-- 禁止品牌字段自行推断。
-- 禁止在 `系统文件(勿碰)\临时文件放置处` 以外产生中间文件。
-- 禁止让标题、简介、描述、标签带有分析口吻。
-- 禁止标题和标签批量写成完全一样。
-- 禁止主题标签包含颜色、敏感品牌词、违禁词或超过 30 个字符的标签。
-- 禁止标题、简介、描述、标签涉及“厂家”“批发”等字眼，以及对应俄文/英文含义的厂家、工厂、批发、批发价、供应商、源头厂家等表达。
-- 禁止长数字用科学计数法显示。
-- 禁止新填行标黄。
-- 禁止 `上架任务总表.xlsx` 新增行继承黄色填充。
-- 禁止跳过上架任务总表。
-- 禁止跳过自动上架工具回填。
-- 禁止在任何原始要求未核对通过时声称任务完成。
+1. Run `scripts/read_utf8_references.py --all`.
+2. Identify the shop root and product-number prefix.
+3. Read shop-specific total rules and category notes.
+4. Identify products from finished images and map them to product info folders.
+5. Read txt and image-based product data.
+6. Analyze Ozon/search data when creating titles, descriptions, and tags.
+7. Fill the price workbook.
+8. Fill the category listing workbook.
+9. Build the `main images and video` product-number folders and image zip.
+10. Fill the task summary workbook with no yellow fill on new rows.
+11. Backfill the auto-listing tool.
+12. Run the final checklist and report exactly what was completed.

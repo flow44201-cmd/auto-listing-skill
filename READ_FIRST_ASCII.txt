@@ -1,0 +1,17 @@
+READ THIS FIRST
+
+This skill is designed for Windows computers where PowerShell often reads Chinese UTF-8 text with the wrong default encoding.
+
+Do not read Chinese reference files with default Get-Content or type.
+
+Use this command from the skill folder:
+
+python .\scripts\read_utf8_references.py --all
+
+Use this command to verify the files:
+
+python .\scripts\read_utf8_references.py --check
+
+If you must use PowerShell Get-Content, always add -Encoding UTF8.
+
+The main SKILL.md file is ASCII-only on purpose, so it remains readable even on computers with legacy PowerShell encodings.
