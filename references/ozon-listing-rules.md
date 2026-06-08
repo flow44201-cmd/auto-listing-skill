@@ -2,7 +2,9 @@
 
 ## 编码读取规则
 
-所有 skill 文件和 `references` 文件都是 UTF-8。读取本 skill 或 references 时必须使用 UTF-8；在 Windows PowerShell 中必须用 `Get-Content -Encoding UTF8` 或等价方式。若看到 `褰撶敤鎴`、`涓`、`鈥`、`�` 等乱码，说明读取方式错误，必须立刻用 UTF-8 重新读取，不能基于乱码内容继续执行。
+所有 skill 文件和 `references` 文件都是 UTF-8。读取本 skill 或 references 时必须使用 UTF-8；在 Windows PowerShell 中必须用 `Get-Content -Encoding UTF8` 或等价方式。若看到 `褰撶敤鎴`、`涓`、`鈥`、`U+FFFD replacement character` 等乱码，说明读取方式错误，必须立刻用 UTF-8 重新读取，不能基于乱码内容继续执行。
+
+读取 `references/verbatim-user-requirements.md`、`references/full-original-instructions.md`、`references/ozon-listing-rules.md` 和 `references/final-audit-checklist.md` 时必须完整读取全文，不能只读开头、不能使用 `-TotalCount`/head/preview 代替全文读取。执行前必须确认中文能完整显示，且没有乱码。
 
 ## 动态目录和文件
 
