@@ -67,14 +67,19 @@ Important constraints that must never be skipped:
 - Determine the product-number prefix dynamically from the user message, shop config, init script, or old workbooks. Do not hardcode `1`, `21`, or any other prefix without a source.
 - `Finished images` / `system finished images` determine what products must be listed.
 - Product selling points and parameters come from corresponding product info folders, txt files, and selling-point images.
+- Product info txt files may use the new filled template described in the UTF-8 references. Parse every line of that template; do not ignore freight, product weight, color count, link count, repacking dimensions, repacking weight, pasted attributes, pasted package info, or the "estimate the rest yourself" instruction.
+- If pasted product attributes/package info conflict with the user's own repacking section, the user's own repacking section wins.
 - Fill the price workbook without overwriting old data or formulas.
 - Preserve formulas and formatting; do not hide or overwrite formulas.
 - Fill numeric values as numbers where required; keep long IDs as direct text, never scientific notation.
 - Prices and relevant amounts are RMB when the user says so; do not calculate from rubles.
 - Respect all unit conversions.
 - Choose the category workbook from the category line in the product txt file.
+- Also judge product category yourself when required. Products with different categories must not be written into the same category listing workbook.
+- If products have different categories, each category must have its own listing workbook output and its own separate row in the task summary workbook.
 - Listing titles, descriptions, and tags must be Russian and suitable for direct Ozon upload.
-- Titles, descriptions, intros, and tags must not contain brand information unless allowed, forbidden words, color terms where prohibited, or manufacturer/factory/wholesale/supplier wording.
+- Titles, descriptions, intros, and tags must not contain brand information unless allowed, forbidden words, color terms where prohibited, or manufacturer/factory/wholesale/origin/place-of-origin/year/supplier wording.
+- Even if the user-provided source text contains manufacturer, factory, wholesale, origin/place-of-origin, year, or manufacturer-info wording, ignore those parts. The seller page should mainly display product information and must not mention manufacturer information.
 - Tags must be based on product data and Ozon/search analysis.
 - Category attributes must follow "fill everything that can reasonably be filled".
 - Fields with dictionary/dropdown/enum values must use valid dictionary values or old-table dictionary patterns. Do not invent dictionary values and do not replace dictionary values with free text.
