@@ -81,6 +81,8 @@ Important constraints that must never be skipped:
 - Titles, descriptions, intros, and tags must not contain brand information unless allowed, forbidden words, color terms where prohibited, or manufacturer/factory/wholesale/origin/place-of-origin/year/supplier wording.
 - Even if the user-provided source text contains manufacturer, factory, wholesale, origin/place-of-origin, year, or manufacturer-info wording, ignore those parts. The seller page should mainly display product information and must not mention manufacturer information.
 - Tags must be based on product data and Ozon/search analysis.
+- Before generating titles or attributes, analyze the actual product from images, 1688/source links, product name, category, spec data, competitor data, and Ozon/RU search habits. Do not merely translate the Chinese name, invent a title, or reuse a fixed template.
+- Avoid Ozon duplicate-card or forced-merge problems. For offers that should not merge into one card, keep model-name, similar-product grouping, color-name, seller-code, title structure, specs, weight, dimensions, use case, and scenario distinguishable by offer_id or real product specs, for example `model-{offer_id}` and `series-{offer_id}`.
 - Category attributes must follow "fill everything that can reasonably be filled".
 - Fields with dictionary/dropdown/enum values must use valid dictionary values or old-table dictionary patterns. Do not invent dictionary values and do not replace dictionary values with free text.
 - Brand is the special exception: fill a brand only when the user explicitly provides `brand: XXX` or the Chinese equivalent. Otherwise use the Russian no-brand dictionary value specified in the UTF-8 references.
